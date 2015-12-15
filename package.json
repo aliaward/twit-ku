@@ -1,0 +1,11 @@
+{
+	"name": "twit-ku",
+	"version": "0.0.1",
+	"author": "freeeve and award",
+	
+	"dependencies": {
+		"twitter": "1.2.5"
+	}
+	
+	
+}
