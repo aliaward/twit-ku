@@ -6,7 +6,6 @@ fs.readFile('mhyph2.txt','utf8', function (err, data){
 		console.log(err);
 	}
 	else{
-//		console.log(data);
 		buildMap(data);
 		getTweets("wefreema");
 		getTweets("aliaward");
@@ -23,17 +22,45 @@ var client = new twit({
 function getTweets(user){
 	var params = {screen_name: user};
 	client.get('statuses/user_timeline', params, function(error, tweets, response){
-	if (!error) {
-		for(var i = 0; i < tweets.length; i++){
-			console.log(tweets[i].text);
-		}	
-	}
+		var wordArray = [];
+		if (!error) {
+			for(var i = 0; i < tweets.length; i++){
+				wordArray.push.apply(wordArray, tweets[i].text.split(' '));
+			}	
+		}
+		buildHaiku(wordArray);
 	});
-	buildTweetMap(tweets);
 }
 
-function buildTweetMap(tweets){
+function buildHaiku(wordArray){
+	var haiku = '';
+	haiku += buildLine(5, wordArray);
+	haiku += '\n';
+	haiku += buildLine(7, wordArray);
+	haiku += '\n';
+	haiku += buildLine(5, wordArray);
+	haiku += '\n';
+	console.log(haiku);
+}
+
+function buildLine(size, words){
+	var currentSize = 0;
+	var word = '';
+	var line = [];
+	while(currentSize < size){
+		word = words[randomInt(0, words.length-1)];
+		for(var i = 1; i <= size-currentSize; i++){
+			if(sylMap[i][word.toLowerCase()]){
+				currentSize += i;
+				line.push(word);
+			}
+		}
+	} 
+	return line.join(' ');
+}
 	
+function randomInt (low, high) {
+    return Math.floor(Math.random() * (high - low) + low);
 }
 
 function buildMap(data){
@@ -44,8 +71,7 @@ function buildMap(data){
 			if(!sylMap[word.length]){
 				sylMap[word.length] = {};			
 			}
-			sylMap[word.length][word.join('')] = true;
+			sylMap[word.length][word.join('').toLowerCase()] = true;
 		}
 	}
-//	console.log(sylMap);
 }
