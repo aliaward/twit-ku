@@ -9,6 +9,7 @@ fs.readFile('mhyph2.txt','utf8', function (err, data){
 		buildMap(data);
 		getTweets("wefreema");
 		getTweets("aliaward");
+		getTweets("cournteystodden");
 	}
 });
 
@@ -22,23 +23,43 @@ var client = new twit({
 function getTweets(user){
 	var params = {screen_name: user};
 	client.get('statuses/user_timeline', params, function(error, tweets, response){
+		var wordMap = {};
 		var wordArray = [];
 		if (!error) {
 			for(var i = 0; i < tweets.length; i++){
-				wordArray.push.apply(wordArray, tweets[i].text.split(' '));
+				var wordArray = tweets[i].text.replace(/[-\/#!$%\^&\*;:{}=\-_`~()]/g,"").split(' ');
+				//set up loop for wordMap
+				for(var j = 0; j<wordArray.length-1; j++){
+					if(!wordMap[wordArray[j]]){
+						wordMap[wordArray[j]] = {};
+					}
+					if(!wordMap[wordArray[j]][wordArray[j+1]]){
+						wordMap[wordArray[j]][wordArray[j+1]] = 0;
+					}
+					wordMap[wordArray[j]][wordArray[j+1]]++;
+				}
+				if(!wordMap[wordArray[wordArray.length-1]]){
+					wordMap[wordArray[wordArray.length-1]] = {};
+				}
+				if(!wordMap[wordArray[wordArray.length-1]]['.']){
+					wordMap[wordArray[wordArray.length-1]]['.'] = 0;
+				}
+				wordMap[wordArray[wordArray.length-1]]['.']++;
+				//need periods for ends of other tweets, not just last tweet.
 			}	
 		}
-		buildHaiku(wordArray);
+		buildHaiku(wordMap);
 	});
 }
 
-function buildHaiku(wordArray){
+function buildHaiku(wordMap){
+//	console.log(wordMap);
 	var haiku = '';
-	haiku += buildLine(5, wordArray);
+	haiku += buildLine(5, wordMap);
 	haiku += '\n';
-	haiku += buildLine(7, wordArray);
+	haiku += buildLine(7, wordMap);
 	haiku += '\n';
-	haiku += buildLine(5, wordArray);
+	haiku += buildLine(5, wordMap);
 	haiku += '\n';
 	console.log(haiku);
 }
@@ -46,14 +67,33 @@ function buildHaiku(wordArray){
 function buildLine(size, words){
 	var currentSize = 0;
 	var word = '';
+	var lastWord = '';
 	var line = [];
 	while(currentSize < size){
-		word = words[randomInt(0, words.length-1)];
+//		console.log(lastWord);
+		if(lastWord !== ''){
+//			console.log(Object.keys(words[lastWord]).length);
+//			console.log(words[lastWord]);
+			word = Object.keys(words[lastWord])[randomInt(0, Object.keys(words[lastWord]).length)];
+//			console.log(word);
+			if(word === '.' || !word){
+				word = Object.keys(words)[randomInt(0, Object.keys(words).length)];
+			}
+		}else{
+			word = Object.keys(words)[randomInt(0, Object.keys(words).length)];
+		}
+		var found = false;
 		for(var i = 1; i <= size-currentSize; i++){
-			if(sylMap[i][word.toLowerCase()]){
+			if(sylMap[i][word.replace(/[.,]/g,"").toLowerCase()]){
 				currentSize += i;
 				line.push(word);
+				lastWord = word;
+				found = true;
+				//do check for second word size
 			}
+		}
+		if(!found){
+			lastWord = '';
 		}
 	} 
 	return line.join(' ');
